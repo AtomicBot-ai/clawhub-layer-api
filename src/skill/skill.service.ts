@@ -46,26 +46,13 @@ export class SkillService {
   async search(query: string, limit: number): Promise<SearchResultItem[]> {
     const localResults = await this.repo.textSearch(query, limit);
 
-    if (localResults.length > 0) {
-      return localResults.map((doc) => ({
-        score: (doc as unknown as { _doc?: { score?: number } })._doc?.score ?? 0,
-        slug: doc.slug,
-        displayName: doc.displayName,
-        summary: doc.summary,
-        version: doc.latestVersion?.version ?? null,
-        updatedAt: doc.updatedAt,
-      }));
-    }
-
-    this.logger.log(`Local search empty for "${query}", fetching from Convex`);
-    const remote = await this.convex.searchSkills(query, limit);
-    return remote.results.map((r) => ({
-      score: r.score,
-      slug: r.slug ?? '',
-      displayName: r.displayName ?? '',
-      summary: r.summary ?? null,
-      version: r.version ?? null,
-      updatedAt: r.updatedAt ?? null,
+    return localResults.map((doc) => ({
+      score: (doc as unknown as { _doc?: { score?: number } })._doc?.score ?? 0,
+      slug: doc.slug,
+      displayName: doc.displayName,
+      summary: doc.summary,
+      version: doc.latestVersion?.version ?? null,
+      updatedAt: doc.updatedAt,
     }));
   }
 
