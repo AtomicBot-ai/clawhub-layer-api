@@ -10,11 +10,18 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+          REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: PROJECT_PATH,REPO
           script: |
-            cd ${{ secrets.PROJECT_PATH }}
+            if [ ! -d "$PROJECT_PATH" ]; then
+              git clone https://github.com/${REPO}.git $PROJECT_PATH
+            fi
+            cd $PROJECT_PATH
             git pull origin main
             docker compose -f docker-compose.prod.yml up --build -d
