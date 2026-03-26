@@ -14,6 +14,14 @@ ClawHub is the largest skills marketplace for AI agents — thousands of install
 
 ---
 
+## Try It Now
+
+**Live API** — [clawhub.atomicbot.ai](https://clawhub.atomicbot.ai/api)
+
+**OpenAPI Spec** — [clawhub.atomicbot.ai/docs-json](https://clawhub.atomicbot.ai/docs-json) — feed it to your coding agent to unleash full API access.
+
+---
+
 ## What You Get
 
 - **Complete catalog** — all 36,000+ skills with stats, versions, tags, and ownership
