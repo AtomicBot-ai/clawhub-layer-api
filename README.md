@@ -16,7 +16,7 @@ ClawHub is the largest skills marketplace for AI agents — thousands of install
 
 ## Try It Now
 
-**Live API** — [clawhub.atomicbot.ai](https://clawhub.atomicbot.ai/api)
+**Live API** — [clawhub.atomicbot.ai](https://clawhub.atomicbot.ai/api/skills)
 
 **API Docs** - [swagger](https://clawhub.atomicbot.ai/docs)
 
