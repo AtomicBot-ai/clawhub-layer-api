@@ -30,6 +30,7 @@ export class SkillService {
     limit: number;
     sort: string;
     dir: string;
+    q?: string;
     nonSuspiciousOnly?: boolean;
   }): Promise<SkillListResponse> {
     const { items, total } = await this.repo.findPaginated(options);

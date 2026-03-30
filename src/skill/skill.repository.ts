@@ -33,12 +33,15 @@ export class SkillRepository {
     limit: number;
     sort: string;
     dir: string;
+    q?: string;
     nonSuspiciousOnly?: boolean;
   }): Promise<{ items: SkillDocument[]; total: number }> {
-    const sortField = SORT_FIELD_MAP[options.sort] ?? 'stats.downloads';
-    const sortDir: SortOrder = options.dir === 'asc' ? 1 : -1;
-
     const filter: Record<string, unknown> = {};
+
+    if (options.q) {
+      filter.$text = { $search: options.q };
+    }
+
     if (options.nonSuspiciousOnly) {
       filter.$or = [
         { moderation: null },
@@ -46,12 +49,19 @@ export class SkillRepository {
       ];
     }
 
+    const projection = options.q ? { score: { $meta: 'textScore' } } : {};
+
+    const sortSpec =
+      options.sort === 'relevance' && options.q
+        ? { score: { $meta: 'textScore' } as unknown as SortOrder }
+        : { [SORT_FIELD_MAP[options.sort] ?? 'stats.downloads']: (options.dir === 'asc' ? 1 : -1) as SortOrder };
+
     const skip = (options.page - 1) * options.limit;
 
     const [items, total] = await Promise.all([
       this.model
-        .find(filter)
-        .sort({ [sortField]: sortDir })
+        .find(filter, projection)
+        .sort(sortSpec)
         .skip(skip)
         .limit(options.limit)
         .exec(),

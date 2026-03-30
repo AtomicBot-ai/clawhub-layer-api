@@ -5,6 +5,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // ── Query DTOs ──
 
 export class ListSkillsQuery {
+  @ApiPropertyOptional({ description: 'Full-text search query. When provided, results are sorted by relevance by default.' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+
   @ApiPropertyOptional({ description: 'Page number', default: 1, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
@@ -21,13 +26,13 @@ export class ListSkillsQuery {
   limit?: number = 25;
 
   @ApiPropertyOptional({
-    description: 'Sort field',
+    description: 'Sort field. "relevance" is only available when q is provided.',
     default: 'downloads',
-    enum: ['downloads', 'stars', 'installs', 'updated', 'newest', 'name'],
+    enum: ['downloads', 'stars', 'installs', 'updated', 'newest', 'name', 'relevance'],
   })
   @IsOptional()
-  @IsIn(['downloads', 'stars', 'installs', 'updated', 'newest', 'name'])
-  sort?: string = 'downloads';
+  @IsIn(['downloads', 'stars', 'installs', 'updated', 'newest', 'name', 'relevance'])
+  sort?: string;
 
   @ApiPropertyOptional({ description: 'Sort direction', default: 'desc', enum: ['asc', 'desc'] })
   @IsOptional()
