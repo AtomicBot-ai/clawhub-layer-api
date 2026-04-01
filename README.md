@@ -1,4 +1,4 @@
-<img src="https://github.com/AtomicBot-ai/.github/raw/main/assets/logo.png" width="80" alt="Atomic" />
+<img src="https://github.com/AtomicBot-ai/.github/raw/main/assets/clawhub-API.png" width="80" alt="Atomic" />
 
 # ClawHub Layer API
 
