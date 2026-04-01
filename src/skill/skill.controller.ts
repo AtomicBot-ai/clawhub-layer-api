@@ -18,7 +18,7 @@ export class SkillController {
   constructor(private readonly service: SkillService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List skills', description: 'Paginated list of skills with sorting, filtering and full-text search. Pass "q" to search by slug, displayName and summary.' })
+  @ApiOperation({ summary: 'Search skills', description: 'Paginated list of skills with sorting, filtering and full-text search. Pass "q" to search by slug, displayName and summary.' })
   @ApiResponse({ status: 200, description: 'Paginated skill list', type: SkillListResponseDto })
   list(@Query() query: ListSkillsQuery) {
     return this.service.list({
@@ -31,17 +31,6 @@ export class SkillController {
     });
   }
 
-  /** @deprecated Use GET /api/skills?q=... instead */
-  @Get('search')
-  @ApiOperation({
-    summary: 'Search skills (deprecated)',
-    description: 'Deprecated: use GET /api/skills?q=... instead. Full-text search across slug, displayName and summary.',
-    deprecated: true,
-  })
-  @ApiResponse({ status: 200, description: 'Search results', type: [SearchResultItemDto] })
-  search(@Query() query: SearchSkillsQuery) {
-    return this.service.search(query.q, query.limit ?? 25);
-  }
 
   @Get(':slug')
   @ApiOperation({ summary: 'Get skill by slug', description: 'Returns cached skill data and triggers background refresh from ClawHub. Includes security scans, files, moderation info.' })
