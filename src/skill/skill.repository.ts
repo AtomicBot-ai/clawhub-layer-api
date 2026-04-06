@@ -132,6 +132,17 @@ export class SkillRepository {
   }
 
   async markRemovedExcept(activeSlugs: string[]): Promise<number> {
+    const defaultModeration = {
+      isPendingScan: false,
+      isMalwareBlocked: false,
+      isSuspicious: false,
+      isHiddenByMod: false,
+      isRemoved: false,
+      verdict: null,
+      reasonCodes: [],
+      summary: null,
+    };
+
     const result = await this.model.updateMany(
       {
         slug: { $nin: activeSlugs },
@@ -140,11 +151,19 @@ export class SkillRepository {
           { 'moderation.isRemoved': { $ne: true } },
         ],
       },
-      {
-        $set: {
-          'moderation.isRemoved': true,
+      [
+        {
+          $set: {
+            moderation: {
+              $mergeObjects: [
+                defaultModeration,
+                { $ifNull: ['$moderation', {}] },
+                { isRemoved: true },
+              ],
+            },
+          },
         },
-      },
+      ],
     );
     return result.modifiedCount;
   }
