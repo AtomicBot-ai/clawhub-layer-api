@@ -9,7 +9,10 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "cli": "ts-node -r tsconfig-paths/register src/cli.ts --",
-    "cli:prod": "node dist/cli"
+    "cli:prod": "node dist/cli",
+    "sync": "ts-node -r tsconfig-paths/register src/cli.ts sync",
+    "sync:prod": "node dist/cli sync",
+    "sync:docker": "docker compose exec app npx ts-node -r tsconfig-paths/register src/cli.ts sync"
   },
   "keywords": [],
   "author": "",

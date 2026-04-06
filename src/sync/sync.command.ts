@@ -10,7 +10,7 @@ export class SyncCommand extends CommandRunner {
   async run(): Promise<void> {
     const result = await this.syncService.runFullSync();
     console.log(
-      `Sync completed: ${result.totalSynced} skills across ${result.pages} pages`,
+      `Sync completed: ${result.totalSynced} synced, ${result.removed} marked removed across ${result.pages} pages`,
     );
   }
 }

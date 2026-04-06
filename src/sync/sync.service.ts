@@ -1,7 +1,5 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SchedulerRegistry } from '@nestjs/schedule';
-import { CronJob } from 'cron';
 import { ConvexClientService } from '../convex-client/convex-client.service';
 import { SkillRepository, BulkUpsertItem } from '../skill/skill.repository';
 import { ConvexListPageItem } from '../convex-client/convex-client.types';
@@ -9,35 +7,45 @@ import { ConvexListPageItem } from '../convex-client/convex-client.types';
 const PAGE_SIZE = 200;
 
 @Injectable()
-export class SyncService implements OnModuleInit {
+export class SyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SyncService.name);
   private syncing = false;
+  private intervalRef: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly convex: ConvexClientService,
     private readonly repo: SkillRepository,
     private readonly config: ConfigService,
-    private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
   onModuleInit() {
-    const cronExpression = this.config.get<string>('app.syncCron', '0 */3 * * *');
-    const job = new CronJob(cronExpression, async () => {
-      await this.runFullSync();
-    });
-    this.schedulerRegistry.addCronJob('skills-sync', job);
-    job.start();
-    this.logger.log(`Scheduled skills sync cron: ${cronExpression}`);
+    const intervalMinutes = this.config.get<number>('app.syncIntervalMinutes', 90);
+    const intervalMs = intervalMinutes * 60 * 1000;
+
+    this.intervalRef = setInterval(() => {
+      this.runFullSync().catch((err) =>
+        this.logger.error(`Scheduled sync failed: ${err}`),
+      );
+    }, intervalMs);
+
+    this.logger.log(`Scheduled skills sync every ${intervalMinutes} minutes`);
+  }
+
+  onModuleDestroy() {
+    if (this.intervalRef) {
+      clearInterval(this.intervalRef);
+      this.intervalRef = null;
+    }
   }
 
   isSyncing(): boolean {
     return this.syncing;
   }
 
-  async runFullSync(): Promise<{ totalSynced: number; pages: number }> {
+  async runFullSync(): Promise<{ totalSynced: number; pages: number; removed: number }> {
     if (this.syncing) {
       this.logger.warn('Sync already in progress, skipping');
-      return { totalSynced: 0, pages: 0 };
+      return { totalSynced: 0, pages: 0, removed: 0 };
     }
 
     this.syncing = true;
@@ -45,6 +53,7 @@ export class SyncService implements OnModuleInit {
     let totalSynced = 0;
     let pages = 0;
     let cursor: string | undefined;
+    const allSlugs: string[] = [];
 
     try {
       this.logger.log('Starting full skills sync...');
@@ -60,6 +69,10 @@ export class SyncService implements OnModuleInit {
 
         const items = result.page.map(mapPageItemToUpsert);
         const synced = await this.repo.bulkUpsert(items);
+
+        for (const item of result.page) {
+          allSlugs.push(item.skill.slug);
+        }
 
         totalSynced += synced;
         pages++;
@@ -77,12 +90,15 @@ export class SyncService implements OnModuleInit {
         );
       } while (cursor);
 
+      const removed = await this.repo.markRemovedExcept(allSlugs);
+      const restored = await this.repo.unmarkRemoved(allSlugs);
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       this.logger.log(
-        `Sync complete: ${totalSynced} skills across ${pages} pages in ${elapsed}s`,
+        `Sync complete: ${totalSynced} synced, ${removed} marked removed, ${restored} restored across ${pages} pages in ${elapsed}s`,
       );
 
-      return { totalSynced, pages };
+      return { totalSynced, pages, removed };
     } catch (err) {
       this.logger.error(`Sync failed after ${pages} pages: ${err}`);
       throw err;

@@ -36,18 +36,30 @@ export class SkillRepository {
     q?: string;
     nonSuspiciousOnly?: boolean;
   }): Promise<{ items: SkillDocument[]; total: number }> {
-    const filter: Record<string, unknown> = {};
+    const conditions: Record<string, unknown>[] = [
+      {
+        $or: [
+          { moderation: null },
+          { 'moderation.isRemoved': { $ne: true } },
+        ],
+      },
+    ];
 
     if (options.q) {
-      filter.$text = { $search: options.q };
+      conditions.push({ $text: { $search: options.q } });
     }
 
     if (options.nonSuspiciousOnly) {
-      filter.$or = [
-        { moderation: null },
-        { 'moderation.isSuspicious': false, 'moderation.isMalwareBlocked': false },
-      ];
+      conditions.push({
+        $or: [
+          { moderation: null },
+          { 'moderation.isSuspicious': false, 'moderation.isMalwareBlocked': false },
+        ],
+      });
     }
+
+    const filter: Record<string, unknown> =
+      conditions.length === 1 ? conditions[0] : { $and: conditions };
 
     const projection = options.q ? { score: { $meta: 'textScore' } } : {};
 
@@ -77,7 +89,17 @@ export class SkillRepository {
   ): Promise<SkillDocument[]> {
     return this.model
       .find(
-        { $text: { $search: query } },
+        {
+          $and: [
+            { $text: { $search: query } },
+            {
+              $or: [
+                { moderation: null },
+                { 'moderation.isRemoved': { $ne: true } },
+              ],
+            },
+          ],
+        },
         { score: { $meta: 'textScore' } },
       )
       .sort({ score: { $meta: 'textScore' } })
@@ -107,6 +129,40 @@ export class SkillRepository {
 
     const result = await this.model.bulkWrite(ops, { ordered: false });
     return result.upsertedCount + result.modifiedCount;
+  }
+
+  async markRemovedExcept(activeSlugs: string[]): Promise<number> {
+    const result = await this.model.updateMany(
+      {
+        slug: { $nin: activeSlugs },
+        $or: [
+          { moderation: null },
+          { 'moderation.isRemoved': { $ne: true } },
+        ],
+      },
+      {
+        $set: {
+          'moderation.isRemoved': true,
+        },
+      },
+    );
+    return result.modifiedCount;
+  }
+
+  async unmarkRemoved(slugs: string[]): Promise<number> {
+    if (slugs.length === 0) return 0;
+    const result = await this.model.updateMany(
+      {
+        slug: { $in: slugs },
+        'moderation.isRemoved': true,
+      },
+      {
+        $set: {
+          'moderation.isRemoved': false,
+        },
+      },
+    );
+    return result.modifiedCount;
   }
 
   async count(): Promise<number> {

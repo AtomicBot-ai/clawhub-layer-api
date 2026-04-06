@@ -20,7 +20,7 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/clawhub-layer
       CONVEX_CLOUD_URL: https://wry-manatee-359.convex.cloud
       CONVEX_SITE_URL: https://wry-manatee-359.convex.site
-      SYNC_CRON: "0 3 * * *"
+      SYNC_INTERVAL_MINUTES: "60"
       PORT: "3000"
 
 volumes:
