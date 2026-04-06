@@ -143,27 +143,20 @@ export class SkillRepository {
       summary: null,
     };
 
+    await this.model.updateMany(
+      {
+        slug: { $nin: activeSlugs },
+        moderation: null,
+      },
+      { $set: { moderation: { ...defaultModeration, isRemoved: true } } },
+    );
+
     const result = await this.model.updateMany(
       {
         slug: { $nin: activeSlugs },
-        $or: [
-          { moderation: null },
-          { 'moderation.isRemoved': { $ne: true } },
-        ],
+        'moderation.isRemoved': { $ne: true },
       },
-      [
-        {
-          $set: {
-            moderation: {
-              $mergeObjects: [
-                defaultModeration,
-                { $ifNull: ['$moderation', {}] },
-                { isRemoved: true },
-              ],
-            },
-          },
-        },
-      ],
+      { $set: { 'moderation.isRemoved': true } },
     );
     return result.modifiedCount;
   }
